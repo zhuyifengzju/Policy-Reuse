@@ -76,13 +76,10 @@ class Agent():
 
             """Add noise to final position"""
             noise_x, noise_y = np.random.uniform(-0.2, 0.2),np.random.uniform(-0.2, 0.2)
-            print(f'Noise {noise_x}, {noise_y}')
-            print(f'Agent before noise {self.x}, {self.y}')
-            print(f'{math.floor(noise_x + self.x), math.floor(noise_y + self.y)}')
+            # noise_x, noise_y = 0, 0
             if [math.floor(noise_x + self.x), math.floor(noise_y + self.y)] not in obs:
                 self.x = self.x + noise_x
                 self.y = self.y + noise_y
-            print(f'Agent after noise {self.x}, {self.y}')
             
             self.Rect.left = math.floor(self.x) * self.scale
             self.Rect.top = math.floor(self.y) * self.scale
@@ -104,7 +101,9 @@ class Maze(Env):
                  use_image_action=False,
                  use_grey_image=False,
                  random_init_pos=False,
-                 max_steps=600):
+                 task_id=0,
+                 max_steps=600,
+                 seed=0):
         """
         height: vertical direction
         width: horizontal direction
@@ -119,8 +118,9 @@ class Maze(Env):
         self.use_image_action = use_image_action
         self.use_grey_image = use_grey_image
         self.random_init_pos = random_init_pos
+        self.task_id = task_id
         self.max_steps = max_steps
-
+        np.random.seed(seed)
         if mask_fn == 'identity':
             self.mask_fn = self.mask_identity_fn
         elif mask_fn == 'masking':
@@ -139,7 +139,7 @@ class Maze(Env):
         )
         # Goal
         # Read from config
-        self.goalx, self.goaly = read_goal()
+        self.goalx, self.goaly = read_goal(task_id=self.task_id)
         self.goal = pygame.Rect(self.goalx * scale,
                                 self.goaly * scale,
                                 scale,
@@ -166,11 +166,14 @@ class Maze(Env):
         else:
             self.action_space = Discrete(len(DiscreteActionMap))
 
-        self.observation_space = Box(low=0,
-                                     high=255,
-                                     shape=(self.width * self.scale,
-                                            self.height * self.scale,
-                                            self.channel))
+        if use_discrete_state is True:
+            self.observation_space = Box(low=0,high=1, shape=(self.width, self.height))
+        else:
+            self.observation_space = Box(low=0,
+                                         high=255,
+                                         shape=(self.width * self.scale,
+                                                self.height * self.scale,
+                                                self.channel))
         
     def _update(self):
         """Update environment."""
@@ -201,12 +204,12 @@ class Maze(Env):
         if self.random_init_pos:
             x = np.random.randint(self.width)
             y = np.random.randint(self.height)
-            while ([x, y] in self.obs_coords):
+            while ([x, y] in self.obs_coords or [x, y] == [self.goalx, self.goaly]):
                 x = np.random.randint(self.width)
                 y = np.random.randint(self.height)
 
-            self.agent_init_x = x
-            self.agent_init_y = y
+            self.agent_init_x = float(x)
+            self.agent_init_y = float(y)
         
         self.agent = Agent(x=self.agent_init_x,
                            y=self.agent_init_y,
@@ -236,11 +239,10 @@ class Maze(Env):
                                            obs=self.obs_coords)
         self._update()
 
-        if (self.agent.x == self.goalx and self.agent.y == self.goaly):
+        if (math.floor(self.agent.x) == self.goalx and math.floor(self.agent.y) == self.goaly):
             self.reach_goal = True
         next_state = self.get_states()
-        if self.use_discrete_state is True:
-            next_state = int(next_state)
+
         reward = self._reward()
         if (self.use_image_action is True
             and valid_action_flag is False and self.evaluate is False):
@@ -258,7 +260,7 @@ class Maze(Env):
     def _reward(self):
         if (self.reach_goal is True):
             return 1
-        elif self.steps <= self.max_steps:
+        else:
             return 0
         
     def _is_terminal(self):
@@ -287,6 +289,7 @@ class Maze(Env):
                               self.agent.y])            
             if self.use_discrete_state is True:
                 states = np.floor(states)
+                states = states.astype(int)
         return states
         
     def close(self):
@@ -353,7 +356,12 @@ def read_map():
 
     return obs
 
-def read_goal():
-    """TODO: Read from a config file"""
+def read_goal(task_id):
 
-    return 18, 1
+    filename = 'goal.cfg'
+    with open(filename, 'r') as f:
+        lines = [line.rstrip('\n') for line in f]
+        for line in lines:
+            id, x, y = (int(item) for item in line.split(','))
+            if task_id == id:
+                return y, x
