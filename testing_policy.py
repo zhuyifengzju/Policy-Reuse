@@ -14,7 +14,7 @@ def arg_parse():
         help='Directory to save data to.')
 
     parser.add_argument(
-        '--task-id', default=1, type=int, help='Episode length')
+        '--task-id', default=0, type=int, help='Episode length')
 
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
@@ -48,8 +48,8 @@ def main():
 
     # random_policy.train(env, args.k, args.h, args.gamma, args.alpha)
 
-    policy_name = 'e-greedy'
-    for i in range(1):
+    policy_name = 'prql-1-2-3-4'
+    for i in range(10):
         
         filename = args.output / f'{policy_name}-2000.npy'
         policy, w = Policy.load(filename)

@@ -62,14 +62,23 @@ def main():
 
     # random_policy.train(env, args.k, args.h, args.gamma, args.alpha)
 
-    epsilon_greedy_policy = Policy(state_shape=env.observation_space.shape,
+    # epsilon_greedy_policy = Policy(state_shape=env.observation_space.shape,
+    #                                action_shape=env.action_space.n,
+    #                                task_id=args.task_id,
+    #                                policy_name='e-greedy',
+    #                                output_dir=args.output,
+    #                                seed=args.seed)
+
+    # epsilon_greedy_policy.train(env, args.k, args.h, args.gamma, args.alpha)
+
+    boltzmann_policy = Policy(state_shape=env.observation_space.shape,
                                    action_shape=env.action_space.n,
                                    task_id=args.task_id,
-                                   policy_name='e-greedy',
+                                   policy_name='boltzmann',
                                    output_dir=args.output,
                                    seed=args.seed)
 
-    epsilon_greedy_policy.train(env, args.k, args.h, args.gamma, args.alpha)
+    boltzmann_policy.train(env, args.k, args.h, args.gamma, args.alpha)
 
     # greedy_policy = Policy(state_shape=env.observation_space.shape,
     #                                action_shape=env.action_space.n,

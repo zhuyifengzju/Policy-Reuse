@@ -97,14 +97,12 @@ class Policy():
         else:
             return np.argmax(self.policy[x, y, :])
             
-    def boltzmann(self, state):
-        # tau = self.global_step * 5
-        # exponent = np.exp(self.policy * tau)
+    def boltzmann(self, x, y):
+        tau = self.global_step * 5
+        exponent = np.exp(self.policy[x,y,:] * tau)
+        logits = exponent / np.sum(exponent)
 
-        # logits = exponent / np.sum(exponent)
-        # return np.random.multinomial(self.action_shape, logits)[0]
-        pass
-    
+        return np.random.choice(self.action_shape[0], p = logits)
 
 class PiReuseAgent():
     def __init__(
